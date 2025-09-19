@@ -1,87 +1,145 @@
-# 🗺️ Prediksi Harga Tanah Menggunakan IDW
+Oke 👍 berdasarkan kode yang kamu kasih, berikut draft **README.md** yang cocok untuk repositori GitHub aplikasi prediksi harga tanah menggunakan IDW:
 
-Aplikasi ini dibuat menggunakan **Python + Streamlit** untuk memprediksi harga tanah berdasarkan koordinat (Longitude & Latitude) menggunakan metode **IDW (Inverse Distance Weighting)**.
-Aplikasi mendukung **optimasi parameter Power** melalui **cross-validation**, serta menampilkan hasil prediksi di peta interaktif dengan warna kategori harga.
+---
+
+# 🗺️ Prediksi Harga Tanah dengan IDW
+
+Aplikasi berbasis **Streamlit** untuk memprediksi harga tanah menggunakan metode **Inverse Distance Weighting (IDW)**.
+Aplikasi ini memungkinkan pengguna untuk:
+
+* Mengunggah data sumber berisi **Longitude, Latitude, dan Harga**.
+* Memprediksi harga tanah pada **koordinat baru** atau pada **grid otomatis**.
+* Menentukan **parameter Power IDW** terbaik menggunakan **cross-validation**.
+* Menampilkan hasil prediksi dengan **visualisasi interaktif di peta** (Circle Marker & Heatmap).
+* Mengunduh hasil prediksi dalam format **CSV** atau **Excel**.
 
 ---
 
 ## 🚀 Fitur Utama
 
-* **Upload Dataset Sumber**
+1. **Cross-validation otomatis**
 
-  * Format `.csv` atau `.xlsx` dengan kolom: `Longitude`, `Latitude`, `Harga`.
+   * Menentukan parameter *power* terbaik untuk IDW berdasarkan nilai RMSE terkecil.
 
-* **Optimasi Power IDW**
+2. **Input Fleksibel**
 
-  * Cross-validation otomatis dengan split 80% training dan 20% validasi.
-  * Menampilkan nilai **RMSE** untuk tiap power yang diuji.
+   * Mendukung file **CSV** dan **Excel**.
+   * Bisa memprediksi pada file koordinat baru atau grid otomatis yang dibangkitkan aplikasi.
 
-* **Mode Prediksi**
+3. **Visualisasi Interaktif**
 
-  * **Koordinat Unggahan**: Upload file koordinat (Longitude, Latitude) untuk diprediksi.
-  * **Grid Otomatis**: Membuat grid berdasarkan bounding area data sumber.
+   * **Circle Marker** dengan kategori harga (Murah, Sedang, Mahal).
+   * **Heatmap** berbasis harga prediksi.
+   * **Legend harga** ditampilkan langsung di peta.
+   * **MarkerCluster** untuk data sumber.
 
-* **Visualisasi Peta Interaktif**
+4. **Download Hasil Prediksi**
 
-  * Menggunakan **Folium**.
-  * Prediksi harga divisualisasikan dengan **3 warna**:
-
-    * 🟢 **Murah** (< persentil 33)
-    * 🟠 **Sedang**
-    * 🔴 **Mahal** (> persentil 66)
-  * Legenda otomatis ditampilkan di peta.
-
-* **Download Hasil Prediksi**
-
-  * Simpan hasil prediksi ke dalam **CSV** atau **Excel**.
+   * Hasil dapat diunduh dalam format **CSV** atau **Excel**.
 
 ---
 
-## 🛠️ Instalasi
+## 📂 Struktur Input Data
 
-1. Clone repository ini:
+### Data Sumber (wajib)
 
-   ```bash
-   git clone https://github.com/ridwana22/ProjekIDW.git
-   ```
+File harus memiliki kolom:
 
-2. Buat virtual environment (opsional tapi disarankan):
+* `Longitude`
+* `Latitude`
+* `Harga`
 
-   ```bash
-   python -m venv venv
-   source venv/bin/activate     # Mac/Linux
-   venv\Scripts\activate        # Windows
-   ```
+**Contoh:**
 
-3. Install dependencies:
+```csv
+Longitude,Latitude,Harga
+112.743,-7.257,1500000
+112.748,-7.260,1800000
+112.750,-7.265,2000000
+```
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Data Prediksi (opsional)
+
+File berisi koordinat prediksi dengan kolom:
+
+* `Longitude`
+* `Latitude`
+
+**Contoh:**
+
+```csv
+Longitude,Latitude
+112.760,-7.270
+112.770,-7.280
+```
+
+Jika tidak disediakan, aplikasi akan otomatis membangkitkan **grid** berdasarkan data sumber.
 
 ---
 
-## 📦 Dependencies
+## ⚙️ Instalasi & Menjalankan Aplikasi
 
-Beberapa library utama yang digunakan:
+### 1. Clone repositori
 
-* [streamlit](https://streamlit.io/) – Framework web untuk Python.
-* [pandas](https://pandas.pydata.org/) – Manipulasi data.
-* [numpy](https://numpy.org/) – Perhitungan numerik.
-* [folium](https://python-visualization.github.io/folium/) – Peta interaktif.
-* [streamlit-folium](https://github.com/randyzwitch/streamlit-folium) – Integrasi Folium dengan Streamlit.
-* [openpyxl](https://openpyxl.readthedocs.io/) – Support file Excel.
+```bash
+git clone https://github.com/ridwana22/ProjekiIDW.git
+```
 
----
+### 2. Buat virtual environment (opsional, tapi disarankan)
 
-## ▶️ Cara Menjalankan
+```bash
+python -m venv venv
+source venv/bin/activate   # Linux/MacOS
+venv\Scripts\activate      # Windows
+```
 
-Jalankan aplikasi Streamlit:
+### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Jalankan aplikasi Streamlit
 
 ```bash
 streamlit run app.py
 ```
 
-Lalu buka link yang muncul (biasanya `http://localhost:8501`) di browser.
+---
+
+## 📦 Dependencies
+
+* `streamlit`
+* `pandas`
+* `numpy`
+* `folium`
+* `streamlit-folium`
+* `openpyxl`
+* `branca`
+* `matplotlib`
 
 ---
+
+## 📊 Visualisasi
+
+### Mode Circle Marker
+
+* Hijau = Murah (di bawah threshold persentil rendah)
+* Oranye = Sedang
+* Merah = Mahal (di atas threshold persentil tinggi)
+
+### Mode Heatmap
+
+* Warna intensitas menunjukkan distribusi harga prediksi.
+
+---
+
+## 📥 Output
+
+Hasil prediksi dapat diunduh dalam format:
+
+* **CSV** (`.csv`)
+* **Excel** (`.xlsx`)
+
+---
+
