@@ -1,7 +1,3 @@
-Oke 👍 berdasarkan kode yang kamu kasih, berikut draft **README.md** yang cocok untuk repositori GitHub aplikasi prediksi harga tanah menggunakan IDW:
-
----
-
 # 🗺️ Prediksi Harga Tanah dengan IDW
 
 Aplikasi berbasis **Streamlit** untuk memprediksi harga tanah menggunakan metode **Inverse Distance Weighting (IDW)**.
