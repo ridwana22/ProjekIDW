@@ -1,90 +1,87 @@
-🗺️ Prediksi Harga Tanah Menggunakan IDW
+# 🗺️ Prediksi Harga Tanah Menggunakan IDW
 
-Aplikasi ini dibuat menggunakan Python + Streamlit untuk memprediksi harga tanah berdasarkan koordinat (Longitude & Latitude) menggunakan metode IDW (Inverse Distance Weighting).
-Aplikasi mendukung optimasi parameter Power melalui cross-validation, serta menampilkan hasil prediksi di peta interaktif dengan warna kategori harga.
+Aplikasi ini dibuat menggunakan **Python + Streamlit** untuk memprediksi harga tanah berdasarkan koordinat (Longitude & Latitude) menggunakan metode **IDW (Inverse Distance Weighting)**.
+Aplikasi mendukung **optimasi parameter Power** melalui **cross-validation**, serta menampilkan hasil prediksi di peta interaktif dengan warna kategori harga.
 
-🚀 Fitur Utama
+---
 
-Upload Dataset Sumber
+## 🚀 Fitur Utama
 
-Format .csv atau .xlsx dengan kolom: Longitude, Latitude, Harga.
+* **Upload Dataset Sumber**
 
-Optimasi Power IDW
+  * Format `.csv` atau `.xlsx` dengan kolom: `Longitude`, `Latitude`, `Harga`.
 
-Cross-validation otomatis dengan split 80% training dan 20% validasi.
+* **Optimasi Power IDW**
 
-Menampilkan nilai RMSE untuk tiap power yang diuji.
+  * Cross-validation otomatis dengan split 80% training dan 20% validasi.
+  * Menampilkan nilai **RMSE** untuk tiap power yang diuji.
 
-Mode Prediksi
+* **Mode Prediksi**
 
-Koordinat Unggahan: Upload file koordinat (Longitude, Latitude) untuk diprediksi.
+  * **Koordinat Unggahan**: Upload file koordinat (Longitude, Latitude) untuk diprediksi.
+  * **Grid Otomatis**: Membuat grid berdasarkan bounding area data sumber.
 
-Grid Otomatis: Membuat grid berdasarkan bounding area data sumber.
+* **Visualisasi Peta Interaktif**
 
-Visualisasi Peta Interaktif
+  * Menggunakan **Folium**.
+  * Prediksi harga divisualisasikan dengan **3 warna**:
 
-Menggunakan Folium.
+    * 🟢 **Murah** (< persentil 33)
+    * 🟠 **Sedang**
+    * 🔴 **Mahal** (> persentil 66)
+  * Legenda otomatis ditampilkan di peta.
 
-Prediksi harga divisualisasikan dengan 3 warna:
+* **Download Hasil Prediksi**
 
-🟢 Murah (< persentil 33)
+  * Simpan hasil prediksi ke dalam **CSV** atau **Excel**.
 
-🟠 Sedang
+---
 
-🔴 Mahal (> persentil 66)
+## 🛠️ Instalasi
 
-Legenda otomatis ditampilkan di peta.
+1. Clone repository ini:
 
-Download Hasil Prediksi
+   ```bash
+   git clone https://github.com/ridwana22/ProjekIDW.git
+   ```
 
-Simpan hasil prediksi ke dalam CSV atau Excel.
+2. Buat virtual environment (opsional tapi disarankan):
 
-🛠️ Instalasi
+   ```bash
+   python -m venv venv
+   source venv/bin/activate     # Mac/Linux
+   venv\Scripts\activate        # Windows
+   ```
 
-Clone repository ini:
+3. Install dependencies:
 
-git clone https://github.com/username/prediksi-harga-tanah-idw.git
-cd prediksi-harga-tanah-idw
+   ```bash
+   pip install -r requirements.txt
+   ```
 
+---
 
-Buat virtual environment (opsional tapi disarankan):
-
-python -m venv venv
-source venv/bin/activate     # Mac/Linux
-venv\Scripts\activate        # Windows
-
-
-Install dependencies:
-
-pip install -r requirements.txt
-
-📦 Dependencies
+## 📦 Dependencies
 
 Beberapa library utama yang digunakan:
 
-streamlit
- – Framework web untuk Python.
+* [streamlit](https://streamlit.io/) – Framework web untuk Python.
+* [pandas](https://pandas.pydata.org/) – Manipulasi data.
+* [numpy](https://numpy.org/) – Perhitungan numerik.
+* [folium](https://python-visualization.github.io/folium/) – Peta interaktif.
+* [streamlit-folium](https://github.com/randyzwitch/streamlit-folium) – Integrasi Folium dengan Streamlit.
+* [openpyxl](https://openpyxl.readthedocs.io/) – Support file Excel.
 
-pandas
- – Manipulasi data.
+---
 
-numpy
- – Perhitungan numerik.
-
-folium
- – Peta interaktif.
-
-streamlit-folium
- – Integrasi Folium dengan Streamlit.
-
-openpyxl
- – Support file Excel.
-
-▶️ Cara Menjalankan
+## ▶️ Cara Menjalankan
 
 Jalankan aplikasi Streamlit:
 
+```bash
 streamlit run app.py
+```
 
+Lalu buka link yang muncul (biasanya `http://localhost:8501`) di browser.
 
-Lalu buka link yang muncul (biasanya http://localhost:8501) di browser.
+---
