@@ -112,24 +112,8 @@ streamlit run app.py
 * `streamlit-folium`
 * `openpyxl`
 * `branca`
-* `matplotlib`
 
 ---
-
-## 📊 Visualisasi
-
-### Mode Circle Marker
-
-* Hijau = Murah (di bawah threshold persentil rendah)
-* Oranye = Sedang
-* Merah = Mahal (di atas threshold persentil tinggi)
-
-### Mode Heatmap
-
-* Warna intensitas menunjukkan distribusi harga prediksi.
-
----
-
 ## 📥 Output
 
 Hasil prediksi dapat diunduh dalam format:
