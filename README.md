@@ -1,125 +1,149 @@
 # 🗺️ Prediksi Harga Tanah dengan IDW
 
 Aplikasi berbasis **Streamlit** untuk memprediksi harga tanah menggunakan metode **Inverse Distance Weighting (IDW)**.
-Aplikasi ini memungkinkan pengguna untuk:
-
-* Mengunggah data sumber berisi **Longitude, Latitude, dan Harga**.
-* Memprediksi harga tanah pada **koordinat baru** atau pada **grid otomatis**.
-* Menentukan **parameter Power IDW** terbaik menggunakan **cross-validation**.
-* Menampilkan hasil prediksi dengan **visualisasi interaktif di peta** (Circle Marker & Heatmap).
-* Mengunduh hasil prediksi dalam format **CSV** atau **Excel**.
+Aplikasi ini juga dilengkapi dengan evaluasi parameter menggunakan **Leave-One-Out Cross-Validation (LOOCV)**, uji signifikansi statistik dengan **Uji T Berpasangan (Paired t-test)**, serta visualisasi interaktif di peta.
 
 ---
 
 ## 🚀 Fitur Utama
 
-1. **Cross-validation otomatis**
+1. **Penentuan Power Terbaik (LOOCV)**
 
-   * Menentukan parameter *power* terbaik untuk IDW berdasarkan nilai RMSE terkecil.
+   * Secara otomatis mencari parameter `power` terbaik untuk IDW berdasarkan error prediksi.
 
-2. **Input Fleksibel**
+2. **Uji T Berpasangan (Paired t-test)**
 
-   * Mendukung file **CSV** dan **Excel**.
-   * Bisa memprediksi pada file koordinat baru atau grid otomatis yang dibangkitkan aplikasi.
+   * Membandingkan signifikansi statistik kinerja IDW dengan dua nilai `power`.
 
-3. **Visualisasi Interaktif**
+3. **Prediksi Harga Tanah**
 
-   * **Circle Marker** dengan kategori harga (Murah, Sedang, Mahal).
-   * **Heatmap** berbasis harga prediksi.
-   * **Legend harga** ditampilkan langsung di peta.
-   * **MarkerCluster** untuk data sumber.
+   * Prediksi dapat dilakukan pada:
 
-4. **Download Hasil Prediksi**
+     * Dataset koordinat baru yang diunggah pengguna.
+     * Grid otomatis (peta dibagi ke dalam resolusi tertentu).
 
-   * Hasil dapat diunduh dalam format **CSV** atau **Excel**.
+4. **Visualisasi Peta Interaktif**
+
+   * Mode **Circle Marker** (titik prediksi dengan warna berdasarkan harga).
+   * Mode **Heatmap** (peta panas distribusi harga).
+   * Legenda dinamis sesuai rentang harga.
+
+5. **Ekspor Hasil Prediksi**
+
+   * Unduh hasil prediksi dalam format **CSV** atau **Excel**.
 
 ---
 
-## 📂 Struktur Input Data
+## 📦 Instalasi
 
-### Data Sumber (wajib)
+1. Clone repository ini:
 
-File harus memiliki kolom:
+   ```bash
+   git clone https://github.com/ridwana22/ProjekIDW.git
+   ```
+
+2. Buat virtual environment (opsional, tapi disarankan):
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate   # Linux/MacOS
+   venv\Scripts\activate      # Windows
+   ```
+
+3. Install dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+---
+
+## ▶️ Cara Menjalankan
+
+1. Jalankan aplikasi Streamlit:
+
+   ```bash
+   streamlit run app.py
+   ```
+
+2. Buka browser di alamat:
+
+   ```
+   http://localhost:8501
+   ```
+
+---
+
+## 📊 Format Dataset
+
+### Dataset Sumber
+
+Berisi data harga tanah yang diketahui. Wajib ada kolom berikut:
 
 * `Longitude`
 * `Latitude`
 * `Harga`
 
-**Contoh:**
+Contoh (`sumber.csv`):
 
 ```csv
 Longitude,Latitude,Harga
-112.743,-7.257,1500000
-112.748,-7.260,1800000
-112.750,-7.265,2000000
+106.8456,-6.2088,15000000
+106.8460,-6.2090,17000000
+106.8470,-6.2100,16000000
 ```
 
-### Data Prediksi (opsional)
+### Dataset Prediksi (Opsional)
 
-File berisi koordinat prediksi dengan kolom:
+Berisi koordinat lokasi yang ingin diprediksi. Wajib ada kolom:
 
 * `Longitude`
 * `Latitude`
 
-**Contoh:**
+Contoh (`prediksi.csv`):
 
 ```csv
 Longitude,Latitude
-112.760,-7.270
-112.770,-7.280
-```
-
-Jika tidak disediakan, aplikasi akan otomatis membangkitkan **grid** berdasarkan data sumber.
-
----
-
-## ⚙️ Instalasi & Menjalankan Aplikasi
-
-### 1. Clone repositori
-
-```bash
-git clone https://github.com/ridwana22/ProjekiIDW.git
-```
-
-### 2. Buat virtual environment (opsional, tapi disarankan)
-
-```bash
-python -m venv venv
-source venv/bin/activate   # Linux/MacOS
-venv\Scripts\activate      # Windows
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Jalankan aplikasi Streamlit
-
-```bash
-streamlit run app.py
+106.8458,-6.2095
+106.8465,-6.2102
 ```
 
 ---
 
-## 📦 Dependencies
+## 🧪 Evaluasi Model
 
-* `streamlit`
-* `pandas`
-* `numpy`
-* `folium`
-* `streamlit-folium`
-* `openpyxl`
-* `branca`
+* **LOOCV (Leave-One-Out Cross Validation)**:
+  Digunakan untuk mencari nilai `power` IDW dengan error terendah.
 
----
-## 📥 Output
-
-Hasil prediksi dapat diunduh dalam format:
-
-* **CSV** (`.csv`)
-* **Excel** (`.xlsx`)
+* **Paired T-Test**:
+  Membandingkan dua nilai `power` untuk melihat apakah perbedaan hasilnya signifikan secara statistik (`p < 0.05`).
 
 ---
 
+## 🎨 Visualisasi
+
+* **Circle Marker**: Titik dengan warna sesuai harga prediksi.
+* **Heatmap**: Menampilkan distribusi harga tanah dalam bentuk peta panas.
+
+---
+
+## 📥 Download Hasil Prediksi
+
+* Hasil prediksi dapat diunduh dalam format:
+
+  * CSV
+  * Excel
+
+---
+
+## 🛠️ Dependencies
+
+* [Streamlit](https://streamlit.io/)
+* [Pandas](https://pandas.pydata.org/)
+* [NumPy](https://numpy.org/)
+* [Folium](https://python-visualization.github.io/folium/)
+* [streamlit-folium](https://github.com/randyzwitch/streamlit-folium)
+* [SciPy](https://scipy.org/)
+* [OpenPyXL](https://openpyxl.readthedocs.io/)
+
+---
