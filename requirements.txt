@@ -3,5 +3,6 @@ pandas
 numpy
 folium
 streamlit-folium
-openpyxl
 branca
+scipy
+openpyxl
