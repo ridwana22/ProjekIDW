@@ -9,6 +9,7 @@ Fitur Utama:
 3. Visualisasi hasil prediksi di peta interaktif (Circle Marker atau Heatmap) dengan legenda dinamis.
 """
 
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -29,7 +30,6 @@ def idw_interpolation(data_points, grid_points, power=2):
     
     for i, grid_point in enumerate(grid_coords):
         distances = np.sqrt(np.sum((known_coords - grid_point)**2, axis=1))
-        # Handle case where a grid point is identical to a known point
         if np.any(distances == 0):
             zero_dist_index = np.where(distances == 0)[0][0]
             predicted_values[i] = known_values[zero_dist_index]
@@ -66,7 +66,7 @@ def run_loocv_for_power(_df_source, power):
 # --- Fungsi mencari power terbaik dengan LOOCV ---
 def find_best_power_loocv(df_source):
     """Mencari parameter power terbaik menggunakan LOOCV dan menampilkan hasilnya."""
-    st.subheader("1. Penentuan Parameter Power IDW Terbaik (via LOOCV)")
+    st.subheader("1. Penentuan Parameter Power IDW Terbaik")
     
     MIN_SAMPLES_REQUIRED = 10
     if len(df_source) < MIN_SAMPLES_REQUIRED:
@@ -89,7 +89,7 @@ def find_best_power_loocv(df_source):
 
     st.success(f"✅ Analisis selesai! Power terbaik = **{best_power:.2f}** dengan MAE terkecil.")
     st.write("Tabel Hasil Uji MAE dari LOOCV (diurutkan):")
-    st.dataframe(results_df.style.highlight_min(subset=['MAE'], color='lightgreen'), use_container_width=True)
+    st.dataframe(results_df.style.highlight_min(subset=['MAE'], color='lightgreen'), width='stretch')
     
     return best_power, results_df
 
@@ -120,7 +120,6 @@ def perform_t_test(df_source, cv_results):
                     errors_a, mae_a = run_loocv_for_power(df_source, power_a)
                     errors_b, mae_b = run_loocv_for_power(df_source, power_b)
                     
-                    # Dengan data yang sudah dibersihkan, kita bisa yakin menggunakan ttest_rel
                     t_statistic, p_value = ttest_rel(errors_a, errors_b)
 
                 st.markdown("---")
@@ -152,7 +151,7 @@ def load_data(uploaded_file):
 
 # --- Konfigurasi Halaman Streamlit ---
 st.set_page_config(layout="wide", page_title="Prediksi Harga Tanah IDW")
-st.title("🗺️ Aplikasi Prediksi Harga Tanah dengan IDW")
+st.title("🏞️ Prediksi Harga Tanah dengan Metode-IDW")
 
 # Inisialisasi session state untuk menyimpan nilai power yang akan digunakan untuk prediksi
 if 'power_for_prediction' not in st.session_state:
@@ -162,7 +161,7 @@ if 'power_for_prediction' not in st.session_state:
 with st.sidebar:
     st.header("⚙️ Pengaturan Aplikasi")
     uploaded_file = st.file_uploader("1. Unggah File Sumber ('Longitude', 'Latitude', 'Harga')", type=["csv", "xlsx"])
-    prediction_file = st.file_uploader("2. Unggah File Koordinat Prediksi (Opsional)", type=["csv", "xlsx"])
+    prediction_file = st.file_uploader("2. Unggah File Koordinat Prediksi ('Longitude', 'Latitude')", type=["csv", "xlsx"])
 
     st.markdown("---")
     st.header("🛠️ Pengaturan Prediksi")
@@ -269,7 +268,7 @@ if uploaded_file is not None:
                 HeatMap(heat_data, radius=10, blur=15, name="Prediksi (Heatmap)").add_to(m)
 
             folium.LayerControl().add_to(m)
-            st_folium(m, width=None, height=700, use_container_width=True)
+            st_folium(m, height=700, width='stretch')
 
             # --- Bagian Download ---
             st.subheader("5. ⬇️ Download Hasil Prediksi")
