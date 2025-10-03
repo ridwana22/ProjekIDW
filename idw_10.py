@@ -9,7 +9,7 @@ Fitur Utama:
 3. Visualisasi hasil prediksi di peta interaktif (Circle Marker atau Heatmap) dengan legenda dinamis.
 """
 
-
+# Import library
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -21,9 +21,9 @@ import branca.colormap as cm
 from scipy.stats import ttest_rel
 
 # --- Fungsi untuk menghitung IDW ---
-def idw_interpolation(data_points, grid_points, power=2):
+def idw_interpolation(data_points, grid_points, power=2): 
     """Menghitung nilai prediksi di grid_points berdasarkan data_points menggunakan IDW."""
-    known_coords = data_points[['Longitude', 'Latitude']].values
+    known_coords = data_points[['Longitude', 'Latitude']].values 
     known_values = data_points['Harga'].values
     grid_coords = grid_points[['Longitude', 'Latitude']].values
     predicted_values = np.zeros(len(grid_coords))
@@ -93,48 +93,48 @@ def find_best_power_loocv(df_source):
     
     return best_power, results_df
 
-# --- Fungsi untuk melakukan Uji T Berpasangan ---
-def perform_t_test(df_source, cv_results):
-    """Membandingkan dua nilai power menggunakan Paired T-Test."""
-    st.subheader("2. Uji Signifikansi Statistik (Paired T-Test)")
-    st.info("Bandingkan dua nilai Power untuk melihat apakah perbedaan kinerjanya signifikan secara statistik.")
+# # --- Fungsi untuk melakukan Uji T Berpasangan ---
+# def perform_t_test(df_source, cv_results):
+#     """Membandingkan dua nilai power menggunakan Paired T-Test."""
+#     st.subheader("2. Uji Signifikansi Statistik (Paired T-Test)")
+#     st.info("Bandingkan dua nilai Power untuk melihat apakah perbedaan kinerjanya signifikan secara statistik.")
     
-    if cv_results is None:
-        st.warning("Uji T tidak dapat dilakukan karena LOOCV tidak dijalankan (data kurang).")
-        return
+#     if cv_results is None:
+#         st.warning("Uji T tidak dapat dilakukan karena LOOCV tidak dijalankan (data kurang).")
+#         return
 
-    with st.expander("Klik untuk melakukan Uji T"):
-        # Nilai default yang cerdas: power terbaik dan terbaik kedua
-        default_power_a = cv_results.loc[0, 'Power']
-        default_power_b = cv_results.loc[1, 'Power'] if len(cv_results) > 1 else 3.0
+#     with st.expander("Klik untuk melakukan Uji T"):
+#         # Nilai default yang cerdas: power terbaik dan terbaik kedua
+#         default_power_a = cv_results.loc[0, 'Power']
+#         default_power_b = cv_results.loc[1, 'Power'] if len(cv_results) > 1 else 3.0
 
-        col1, col2 = st.columns(2)
-        power_a = col1.number_input("Power A", 0.1, 10.0, default_power_a, 0.5, key="power_a")
-        power_b = col2.number_input("Power B", 0.1, 10.0, default_power_b, 0.5, key="power_b")
+#         col1, col2 = st.columns(2)
+#         power_a = col1.number_input("Power A", 0.1, 10.0, default_power_a, 0.5, key="power_a")
+#         power_b = col2.number_input("Power B", 0.1, 10.0, default_power_b, 0.5, key="power_b")
 
-        if st.button("🔬 Lakukan Uji T"):
-            if power_a == power_b:
-                st.error("Power A dan Power B tidak boleh sama.")
-            else:
-                with st.spinner(f"Menjalankan Uji T antara Power {power_a} dan {power_b}..."):
-                    errors_a, mae_a = run_loocv_for_power(df_source, power_a)
-                    errors_b, mae_b = run_loocv_for_power(df_source, power_b)
+#         if st.button("🔬 Lakukan Uji T"):
+#             if power_a == power_b:
+#                 st.error("Power A dan Power B tidak boleh sama.")
+#             else:
+#                 with st.spinner(f"Menjalankan Uji T antara Power {power_a} dan {power_b}..."):
+#                     errors_a, mae_a = run_loocv_for_power(df_source, power_a)
+#                     errors_b, mae_b = run_loocv_for_power(df_source, power_b)
                     
-                    t_statistic, p_value = ttest_rel(errors_a, errors_b)
+#                     t_statistic, p_value = ttest_rel(errors_a, errors_b)
 
-                st.markdown("---")
-                st.write("#### Hasil Uji T:")
-                res_col1, res_col2, res_col3 = st.columns(3)
-                res_col1.metric(f"MAE Power {power_a}", f"{mae_a:,.2f}")
-                res_col2.metric(f"MAE Power {power_b}", f"{mae_b:,.2f}")
-                res_col3.metric("P-value", f"{p_value:.4f}")
+#                 st.markdown("---")
+#                 st.write("#### Hasil Uji T:")
+#                 res_col1, res_col2, res_col3 = st.columns(3)
+#                 res_col1.metric(f"MAE Power {power_a}", f"{mae_a:,.2f}")
+#                 res_col2.metric(f"MAE Power {power_b}", f"{mae_b:,.2f}")
+#                 res_col3.metric("P-value", f"{p_value:.4f}")
 
-                alpha = 0.05
-                if p_value < alpha:
-                    winner = f"Power {power_a}" if mae_a < mae_b else f"Power {power_b}"
-                    st.success(f"**Kesimpulan:** Perbedaan kinerja **signifikan secara statistik** (p < {alpha}). Model dengan **{winner}** terbukti lebih baik.")
-                else:
-                    st.warning(f"**Kesimpulan:** Perbedaan kinerja **tidak signifikan** (p ≥ {alpha}). Tidak ada cukup bukti statistik untuk menyatakan satu model lebih baik dari yang lain.")
+#                 alpha = 0.05
+#                 if p_value < alpha:
+#                     winner = f"Power {power_a}" if mae_a < mae_b else f"Power {power_b}"
+#                     st.success(f"**Kesimpulan:** Perbedaan kinerja **signifikan secara statistik** (p < {alpha}). Model dengan **{winner}** terbukti lebih baik.")
+#                 else:
+#                     st.warning(f"**Kesimpulan:** Perbedaan kinerja **tidak signifikan** (p ≥ {alpha}). Tidak ada cukup bukti statistik untuk menyatakan satu model lebih baik dari yang lain.")
 
 # --- Fungsi membaca data ---
 def load_data(uploaded_file):
@@ -202,7 +202,7 @@ if uploaded_file is not None:
         if cv_results is not None:
             st.sidebar.button("Gunakan Power Terbaik untuk Prediksi", on_click=set_best_power, args=(best_power_cv,), type="primary")
 
-        perform_t_test(df_sumber, cv_results)
+        # perform_t_test(df_sumber, cv_results)
         
         st.markdown("---")
         st.header("Prediksi dan Visualisasi")
@@ -212,10 +212,10 @@ if uploaded_file is not None:
         if prediction_file is not None:
             df_predict = load_data(prediction_file)
             if df_predict is not None and all(col in df_predict.columns for col in ["Longitude", "Latitude"]):
-                st.subheader("3. Prediksi pada Koordinat yang Diunggah")
+                st.subheader("2. Prediksi pada Koordinat yang Diunggah")
                 points_to_predict = df_predict.dropna(subset=["Longitude", "Latitude"])
         else:
-            st.subheader("3. Prediksi pada Grid Otomatis")
+            st.subheader("2. Prediksi pada Grid Otomatis")
             padding = 0.05
             min_lon, max_lon = df_sumber['Longitude'].min()-padding, df_sumber['Longitude'].max()+padding
             min_lat, max_lat = df_sumber['Latitude'].min()-padding, df_sumber['Latitude'].max()+padding
@@ -234,7 +234,7 @@ if uploaded_file is not None:
             st.dataframe(points_to_predict.head())
 
             # --- Bagian Visualisasi Peta ---
-            st.subheader("4. 🗺️ Visualisasi Peta")
+            st.subheader("3. 🗺️ Visualisasi Peta")
             center_lat, center_lon = df_sumber['Latitude'].mean(), df_sumber['Longitude'].mean()
             m = folium.Map(location=[center_lat, center_lon], zoom_start=12)
 
@@ -271,7 +271,7 @@ if uploaded_file is not None:
             st_folium(m, height=700, width='stretch')
 
             # --- Bagian Download ---
-            st.subheader("5. ⬇️ Download Hasil Prediksi")
+            st.subheader("4. ⬇️ Download Hasil Prediksi")
             col_dl1, col_dl2 = st.columns(2)
             file_name = col_dl1.text_input("Nama File untuk Unduhan:", "prediksi_harga_tanah")
             file_type = col_dl2.radio("Format File:", ('CSV', 'Excel'), horizontal=True)
