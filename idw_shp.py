@@ -111,7 +111,6 @@ with st.sidebar:
     st.header("⚙️ 2. Kontrol Power")
     
     # Mode Manual override
-    # Kunci: Slider akan mengikuti session state current_power jika di-reset
     manual_power = st.slider(
         "Power Parameter", 
         0.5, 5.0, 
@@ -125,132 +124,135 @@ with st.sidebar:
 
 # Cek Kelengkapan File
 if f_source and f_target and f_shp:
-    df_src = load_data(f_source)
-    df_tgt = load_data(f_target)
-    gdf_shp = load_shapefile(f_shp)
-    
-    # Validasi Kolom
-    if (df_src is not None and {'Longitude','Latitude','Harga'}.issubset(df_src.columns) and
-        df_tgt is not None and {'Longitude','Latitude'}.issubset(df_tgt.columns)):
+    try:
+        # Load Data
+        df_src = load_data(f_source)
+        df_tgt = load_data(f_target)
+        gdf_shp = load_shapefile(f_shp)
         
-        # Bersihkan Data
-        df_src = df_src.dropna(subset=['Longitude','Latitude','Harga'])
-        
-        # --- TAB MENU ---
-        tab1, tab2 = st.tabs(["📊 Optimasi Model (LOOCV)", "🌍 Peta Prediksi"])
-        
-        with tab1:
-            st.subheader("Cari Parameter Power Terbaik")
-            st.write(f"Power yang sedang digunakan: **{st.session_state.current_power}**")
+        # Validasi Kolom
+        if (df_src is not None and {'Longitude','Latitude','Harga'}.issubset(df_src.columns) and
+            df_tgt is not None and {'Longitude','Latitude'}.issubset(df_tgt.columns)):
             
-            # Tombol untuk menjalankan LOOCV
-            if st.button("🚀 Jalankan Analisis LOOCV", type="primary"):
-                with st.spinner("Sedang menguji berbagai nilai Power..."):
-                    best_p, res_df = run_loocv_optimization(df_src)
-                    
-                    # Simpan hasil ke session state
-                    st.session_state.best_power_found = best_p
-                    st.session_state.current_power = best_p  # Otomatis pakai yang terbaik saat pertama kali run
-                    st.session_state.optimization_done = True
-                    
-                    st.success(f"Analisis Selesai! Power Terbaik: {best_p}")
-                    st.rerun() # Rerun agar slider di sidebar terupdate otomatis
-
-            # Tampilkan Hasil jika sudah pernah dijalankan
-            if st.session_state.optimization_done:
-                st.divider()
-                col_res1, col_res2 = st.columns([1, 1])
+            # Bersihkan Data
+            df_src = df_src.dropna(subset=['Longitude','Latitude','Harga'])
+            
+            # --- TAB MENU ---
+            tab1, tab2 = st.tabs(["📊 Optimasi Model (LOOCV)", "🌍 Peta Prediksi"])
+            
+            with tab1:
+                st.subheader("Cari Parameter Power Terbaik")
+                st.write(f"Power yang sedang digunakan: **{st.session_state.current_power}**")
                 
-                with col_res1:
-                    # Tampilkan Tombol Gunakan Power Terbaik
-                    best_val = st.session_state.best_power_found
-                    st.info(f"Rekomendasi Power Terbaik: **{best_val}**")
+                # Tombol untuk menjalankan LOOCV
+                if st.button("🚀 Jalankan Analisis LOOCV", type="primary"):
+                    with st.spinner("Sedang menguji berbagai nilai Power..."):
+                        best_p, res_df = run_loocv_optimization(df_src)
+                        
+                        # Simpan hasil ke session state
+                        st.session_state.best_power_found = best_p
+                        st.session_state.current_power = best_p
+                        st.session_state.optimization_done = True
+                        
+                        st.success(f"Analisis Selesai! Power Terbaik: {best_p}")
+                        st.rerun()
+
+                # Tampilkan Hasil jika sudah pernah dijalankan
+                if st.session_state.optimization_done:
+                    st.divider()
+                    col_res1, col_res2 = st.columns([1, 1])
                     
-                    # Button khusus untuk revert ke best power
-                    if st.button(f"✅ Gunakan Power Terbaik ({best_val})"):
-                        st.session_state.current_power = best_val
-                        st.rerun() # Refresh halaman untuk update slider dan perhitungan
+                    with col_res1:
+                        best_val = st.session_state.best_power_found
+                        st.info(f"Rekomendasi Power Terbaik: **{best_val}**")
+                        
+                        if st.button(f"✅ Gunakan Power Terbaik ({best_val})"):
+                            st.session_state.current_power = best_val
+                            st.rerun()
+                    
+                    with col_res2:
+                        st.write("**Tabel Error (MAE):**")
+                        _, res_df = run_loocv_optimization(df_src)
+                        st.dataframe(res_df.style.highlight_min(subset=['MAE'], color='lightgreen'), height=200)
+
+            with tab2:
+                st.subheader("Visualisasi Hasil Prediksi")
                 
-                with col_res2:
-                    st.write("**Tabel Error (MAE):**")
-                    # Kita panggil lagi fungsinya (akan cepat karena cache) untuk ambil data tabel
-                    _, res_df = run_loocv_optimization(df_src)
-                    st.dataframe(res_df.style.highlight_min(subset=['MAE'], color='lightgreen'), height=200)
-
-        with tab2:
-            st.subheader("Visualisasi Hasil Prediksi")
-            
-            # --- PROSES PREDIKSI ---
-            # Menggunakan Power yang ada di session state (baik dari slider atau hasil tombol best power)
-            with st.spinner(f"Menghitung prediksi dengan Power {st.session_state.current_power}..."):
-                preds = idw_interpolation(df_src, df_tgt, power=st.session_state.current_power)
-                df_tgt['Harga_Prediksi'] = preds
-            
-            # --- VISUALISASI PETA ---
-            m = folium.Map(location=[df_tgt['Latitude'].mean(), df_tgt['Longitude'].mean()], zoom_start=12)
-            
-            # 1. SHP Layer
-            folium.GeoJson(gdf_shp, name="Batas Wilayah",
-                           style_function=lambda x: {'fillColor': 'none', 'color': 'black', 'dashArray': '5, 5'}).add_to(m)
-            
-            # 2. Points Layer
-            min_v, max_v = df_tgt['Harga_Prediksi'].min(), df_tgt['Harga_Prediksi'].max()
-            cmap = cm.linear.YlOrRd_09.scale(min_v, max_v)
-            cmap.caption = f"Prediksi Harga (Power={st.session_state.current_power})"
-            m.add_child(cmap)
-            
-            # Feature Group untuk Marker Titik
-            fg_markers = folium.FeatureGroup(name="Titik Prediksi")
-            # Feature Group untuk Label Teks (Default disembunyikan agar tidak penuh)
-            fg_labels = folium.FeatureGroup(name="Label Harga (Teks)", show=False)
-
-            for _, row in df_tgt.iterrows():
-                formatted_price = f"Rp {row['Harga_Prediksi']:,.0f}"
+                # --- PROSES PREDIKSI ---
+                with st.spinner(f"Menghitung prediksi dengan Power {st.session_state.current_power}..."):
+                    preds = idw_interpolation(df_src, df_tgt, power=st.session_state.current_power)
+                    df_tgt['Harga_Prediksi'] = preds
                 
-                # A. Marker Lingkaran dengan Tooltip & Popup
-                folium.CircleMarker(
-                    location=[row['Latitude'], row['Longitude']],
-                    radius=6, color='gray', weight=1, fill=True,
-                    fill_color=cmap(row['Harga_Prediksi']), fill_opacity=0.9,
-                    tooltip=formatted_price,  # Muncul saat hover (kursor di atas titik)
-                    popup=formatted_price     # Muncul saat titik diklik
-                ).add_to(fg_markers)
+                # --- VISUALISASI PETA ---
+                m = folium.Map(location=[df_tgt['Latitude'].mean(), df_tgt['Longitude'].mean()], zoom_start=12)
+                
+                # 1. SHP Layer
+                folium.GeoJson(gdf_shp, name="Batas Wilayah",
+                               style_function=lambda x: {'fillColor': 'none', 'color': 'black', 'dashArray': '5, 5'}).add_to(m)
+                
+                # 2. Points Layer
+                min_v, max_v = df_tgt['Harga_Prediksi'].min(), df_tgt['Harga_Prediksi'].max()
+                cmap = cm.linear.YlOrRd_09.scale(min_v, max_v)
+                cmap.caption = f"Prediksi Harga (Power={st.session_state.current_power})"
+                m.add_child(cmap)
+                
+                fg_markers = folium.FeatureGroup(name="Titik Prediksi")
+                fg_labels = folium.FeatureGroup(name="Label Harga (Teks)", show=False)
 
-                # B. Label Teks (DivIcon) agar harga langsung terlihat
-                folium.map.Marker(
-                    [row['Latitude'], row['Longitude']],
-                    icon=DivIcon(
-                        icon_size=(150,36),
-                        icon_anchor=(0,0),
-                        html=f'<div style="font-size: 8pt; color: black; background-color: rgba(255, 255, 255, 0.7); padding: 2px; border-radius: 3px;">{formatted_price}</div>',
-                        )
-                    ).add_to(fg_labels)
+                for _, row in df_tgt.iterrows():
+                    formatted_price = f"Rp {row['Harga_Prediksi']:,.0f}"
+                    
+                    # A. Marker Lingkaran
+                    folium.CircleMarker(
+                        location=[row['Latitude'], row['Longitude']],
+                        radius=6, color='gray', weight=1, fill=True,
+                        fill_color=cmap(row['Harga_Prediksi']), fill_opacity=0.9,
+                        tooltip=formatted_price,
+                        popup=formatted_price
+                    ).add_to(fg_markers)
 
-            fg_markers.add_to(m)
-            fg_labels.add_to(m)
+                    # B. Label Teks (PERBAIKAN UTAMA DISINI)
+                    # Menggunakan folium.Marker, BUKAN folium.map.Marker
+                    folium.Marker(
+                        location=[row['Latitude'], row['Longitude']],
+                        icon=DivIcon(
+                            icon_size=(150,36),
+                            icon_anchor=(0,0),
+                            html=f'<div style="font-size: 8pt; color: black; background-color: rgba(255, 255, 255, 0.7); padding: 2px; border-radius: 3px;">{formatted_price}</div>',
+                            )
+                        ).add_to(fg_labels)
+
+                fg_markers.add_to(m)
+                fg_labels.add_to(m)
+                
+                folium.LayerControl().add_to(m)
+                st_folium(m, width="100%", height=600)
+                
+                # --- DOWNLOAD ---
+                st.subheader("⬇️ Download Hasil Prediksi")
+                col_dl1, col_dl2 = st.columns(2)
+                file_name = col_dl1.text_input("Nama File untuk Unduhan:", "prediksi_harga_tanah")
+                file_type = col_dl2.radio("Format File:", ('CSV', 'Excel'), horizontal=True)
+                
+                if file_type == 'CSV':
+                    csv_data = df_tgt.to_csv(index=False).encode('utf-8')
+                    st.download_button("Unduh sebagai CSV", data=csv_data, file_name=f"{file_name}.csv", mime='text/csv')  
+                else: 
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df_tgt.to_excel(writer, index=False, sheet_name='Prediksi Harga')
+                    st.download_button("Unduh sebagai Excel", data=output.getvalue(),
+                                       file_name=f"{file_name}.xlsx",
+                                       mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             
-            folium.LayerControl().add_to(m)
-            st_folium(m, width="100%", height=600)
+        else:
+            st.error("Kolom wajib tidak ditemukan. Pastikan CSV Sumber punya (Longitude, Latitude, Harga) dan Target punya (Longitude, Latitude).")
             
-            # --- DOWNLOAD ---
-            st.subheader("⬇️ Download Hasil Prediksi")
-            col_dl1, col_dl2 = st.columns(2)
-            file_name = col_dl1.text_input("Nama File untuk Unduhan:", "prediksi_harga_tanah")
-            file_type = col_dl2.radio("Format File:", ('CSV', 'Excel'), horizontal=True)
-            
-            # Tombol unduh hasil prediksi dalam format yang dipilih
-            if file_type == 'CSV': # jika fomrat CSV maka unduh sebagai CSV ubah dengan encoding utf-8
-                csv_data = df_tgt.to_csv(index=False).encode('utf-8')
-                st.download_button("Unduh sebagai CSV", data=csv_data, file_name=f"{file_name}.csv", mime='text/csv')  
-            else: # Excel # jika format Excel maka unduh sebagai Excel dengan menggunakan BytesIO dan library openpyxl
-                output = BytesIO()
-                with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                    df_tgt.to_excel(writer, index=False, sheet_name='Prediksi Harga')
-                st.download_button("Unduh sebagai Excel", data=output.getvalue(),
-                                   file_name=f"{file_name}.xlsx",
-                                   mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            
-    else:
-        st.error("Kolom wajib tidak ditemukan. Pastikan CSV Sumber punya (Longitude, Latitude, Harga) dan Target punya (Longitude, Latitude).")
+    except Exception as e:
+        # Menangkap error detail
+        st.error("Terjadi Kesalahan (Error):")
+        st.write(f"Pesan: {e}")
+        st.write("Silakan periksa kembali file yang diupload atau format isinya.")
+
 else:
     st.info("Silakan upload Data Sumber, Data Target, dan File SHP.")
