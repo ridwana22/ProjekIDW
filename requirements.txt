@@ -6,3 +6,8 @@ streamlit-folium
 branca
 scipy
 openpyxl
+geopandas
+shapely
+pyproj
+fiona
+rtree
