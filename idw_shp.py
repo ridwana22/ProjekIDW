@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd
 import folium
+from folium.features import DivIcon  # Import DivIcon untuk label teks
 from streamlit_folium import st_folium
 import tempfile
 import zipfile
@@ -198,23 +199,56 @@ if f_source and f_target and f_shp:
             cmap.caption = f"Prediksi Harga (Power={st.session_state.current_power})"
             m.add_child(cmap)
             
-            fg = folium.FeatureGroup(name="Hasil Prediksi")
+            # Feature Group untuk Marker Titik
+            fg_markers = folium.FeatureGroup(name="Titik Prediksi")
+            # Feature Group untuk Label Teks (Default disembunyikan agar tidak penuh)
+            fg_labels = folium.FeatureGroup(name="Label Harga (Teks)", show=False)
+
             for _, row in df_tgt.iterrows():
+                formatted_price = f"Rp {row['Harga_Prediksi']:,.0f}"
+                
+                # A. Marker Lingkaran dengan Tooltip & Popup
                 folium.CircleMarker(
                     location=[row['Latitude'], row['Longitude']],
                     radius=6, color='gray', weight=1, fill=True,
                     fill_color=cmap(row['Harga_Prediksi']), fill_opacity=0.9,
-                    tooltip=f"Rp {row['Harga_Prediksi']:,.0f}"
-                ).add_to(fg)
-            fg.add_to(m)
+                    tooltip=formatted_price,  # Muncul saat hover (kursor di atas titik)
+                    popup=formatted_price     # Muncul saat titik diklik
+                ).add_to(fg_markers)
+
+                # B. Label Teks (DivIcon) agar harga langsung terlihat
+                folium.map.Marker(
+                    [row['Latitude'], row['Longitude']],
+                    icon=DivIcon(
+                        icon_size=(150,36),
+                        icon_anchor=(0,0),
+                        html=f'<div style="font-size: 8pt; color: black; background-color: rgba(255, 255, 255, 0.7); padding: 2px; border-radius: 3px;">{formatted_price}</div>',
+                        )
+                    ).add_to(fg_labels)
+
+            fg_markers.add_to(m)
+            fg_labels.add_to(m)
             
             folium.LayerControl().add_to(m)
             st_folium(m, width="100%", height=600)
             
             # --- DOWNLOAD ---
-            st.divider()
-            csv = df_tgt.to_csv(index=False).encode('utf-8')
-            st.download_button("⬇️ Download Hasil Prediksi (CSV)", csv, "prediksi_loocv_final.csv", "text/csv")
+            st.subheader("⬇️ Download Hasil Prediksi")
+            col_dl1, col_dl2 = st.columns(2)
+            file_name = col_dl1.text_input("Nama File untuk Unduhan:", "prediksi_harga_tanah")
+            file_type = col_dl2.radio("Format File:", ('CSV', 'Excel'), horizontal=True)
+            
+            # Tombol unduh hasil prediksi dalam format yang dipilih
+            if file_type == 'CSV': # jika fomrat CSV maka unduh sebagai CSV ubah dengan encoding utf-8
+                csv_data = df_tgt.to_csv(index=False).encode('utf-8')
+                st.download_button("Unduh sebagai CSV", data=csv_data, file_name=f"{file_name}.csv", mime='text/csv')  
+            else: # Excel # jika format Excel maka unduh sebagai Excel dengan menggunakan BytesIO dan library openpyxl
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df_tgt.to_excel(writer, index=False, sheet_name='Prediksi Harga')
+                st.download_button("Unduh sebagai Excel", data=output.getvalue(),
+                                   file_name=f"{file_name}.xlsx",
+                                   mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             
     else:
         st.error("Kolom wajib tidak ditemukan. Pastikan CSV Sumber punya (Longitude, Latitude, Harga) dan Target punya (Longitude, Latitude).")
