@@ -100,6 +100,8 @@ if 'optimization_done' not in st.session_state:
     st.session_state.optimization_done = False
 if 'best_power_found' not in st.session_state:
     st.session_state.best_power_found = None
+if 'viz_started' not in st.session_state:
+    st.session_state.viz_started = False
 
 with st.sidebar:
     st.header("📂 1. Upload Data")
@@ -178,72 +180,85 @@ if f_source and f_target and f_shp:
             with tab2:
                 st.subheader("Visualisasi Hasil Prediksi")
                 
-                # --- PROSES PREDIKSI ---
-                with st.spinner(f"Menghitung prediksi dengan Power {st.session_state.current_power}..."):
-                    preds = idw_interpolation(df_src, df_tgt, power=st.session_state.current_power)
-                    df_tgt['Harga_Prediksi'] = preds
-                
-                # --- VISUALISASI PETA ---
-                m = folium.Map(location=[df_tgt['Latitude'].mean(), df_tgt['Longitude'].mean()], zoom_start=12)
-                
-                # 1. SHP Layer
-                folium.GeoJson(gdf_shp, name="Batas Wilayah",
-                               style_function=lambda x: {'fillColor': 'none', 'color': 'black', 'dashArray': '5, 5'}).add_to(m)
-                
-                # 2. Points Layer
-                min_v, max_v = df_tgt['Harga_Prediksi'].min(), df_tgt['Harga_Prediksi'].max()
-                cmap = cm.linear.YlOrRd_09.scale(min_v, max_v)
-                cmap.caption = f"Prediksi Harga (Power={st.session_state.current_power})"
-                m.add_child(cmap)
-                
-                fg_markers = folium.FeatureGroup(name="Titik Prediksi")
-                fg_labels = folium.FeatureGroup(name="Label Harga (Teks)", show=False)
+                # --- TOMBOL MULAI ---
+                # Menggunakan session state agar peta tidak hilang saat zoom/geser
+                if st.button("▶️ Mulai Prediksi & Visualisasi", type="primary"):
+                    st.session_state.viz_started = True
 
-                for _, row in df_tgt.iterrows():
-                    formatted_price = f"Rp {row['Harga_Prediksi']:,.0f}"
+                if st.session_state.viz_started:
+                    # --- PROSES PREDIKSI ---
+                    with st.spinner(f"Menghitung prediksi dengan Power {st.session_state.current_power}..."):
+                        preds = idw_interpolation(df_src, df_tgt, power=st.session_state.current_power)
+                        df_tgt['Harga_Prediksi'] = preds
                     
-                    # A. Marker Lingkaran
-                    folium.CircleMarker(
-                        location=[row['Latitude'], row['Longitude']],
-                        radius=6, color='gray', weight=1, fill=True,
-                        fill_color=cmap(row['Harga_Prediksi']), fill_opacity=0.9,
-                        tooltip=formatted_price,
-                        popup=formatted_price
-                    ).add_to(fg_markers)
+                    # --- MENAMPILKAN HEAD DATAFRAME ---
+                    st.markdown("### 📋 Pratinjau Data (10 Baris Pertama)")
+                    st.dataframe(df_tgt.head(10), use_container_width=True)
 
-                    # B. Label Teks (PERBAIKAN UTAMA DISINI)
-                    # Menggunakan folium.Marker, BUKAN folium.map.Marker
-                    folium.Marker(
-                        location=[row['Latitude'], row['Longitude']],
-                        icon=DivIcon(
-                            icon_size=(150,36),
-                            icon_anchor=(0,0),
-                            html=f'<div style="font-size: 8pt; color: black; background-color: rgba(255, 255, 255, 0.7); padding: 2px; border-radius: 3px;">{formatted_price}</div>',
+                    # --- VISUALISASI PETA ---
+                    st.markdown("### 🗺️ Peta Interaktif")
+                    m = folium.Map(location=[df_tgt['Latitude'].mean(), df_tgt['Longitude'].mean()], zoom_start=12)
+
+                    # 1. SHP Layer
+                    folium.GeoJson(
+                        gdf_shp,
+                        name="Batas Wilayah",
+                        style_function=lambda x: {'fillColor': 'none', 'color': 'black', 'dashArray': '5, 5'}
+                    ).add_to(m)
+
+                    # 2. Color Map
+                    min_v, max_v = df_tgt['Harga_Prediksi'].min(), df_tgt['Harga_Prediksi'].max()
+                    cmap = cm.linear.YlOrRd_09.scale(min_v, max_v)
+                    cmap.caption = f"Prediksi Harga (Power={st.session_state.current_power})"
+                    m.add_child(cmap)
+
+                    # 3. Feature Group Marker
+                    fg_markers = folium.FeatureGroup(name="Titik Prediksi")
+
+                    # --- LOOP TITIK + LABEL TOOLTIP PERMANENT ---
+                    for _, row in df_tgt.iterrows():
+                        formatted_price = f"Rp {row['Harga_Prediksi']:,.0f}"
+
+                        # Marker lingkaran dengan tooltip permanent
+                        folium.CircleMarker(
+                            location=[row['Latitude'], row['Longitude']],
+                            radius=6,
+                            color='gray',
+                            weight=1,
+                            fill=True,
+                            fill_color=cmap(row['Harga_Prediksi']),
+                            fill_opacity=0.9
+                        ).add_child(
+                            folium.Tooltip(
+                                formatted_price,
+                                permanent=True,     # tampil terus
+                                direction="center", # di tengah marker
+                                sticky=True
                             )
-                        ).add_to(fg_labels)
+                        ).add_to(fg_markers)
 
-                fg_markers.add_to(m)
-                fg_labels.add_to(m)
-                
-                folium.LayerControl().add_to(m)
-                st_folium(m, width="100%", height=600)
-                
-                # --- DOWNLOAD ---
-                st.subheader("⬇️ Download Hasil Prediksi")
-                col_dl1, col_dl2 = st.columns(2)
-                file_name = col_dl1.text_input("Nama File untuk Unduhan:", "prediksi_harga_tanah")
-                file_type = col_dl2.radio("Format File:", ('CSV', 'Excel'), horizontal=True)
-                
-                if file_type == 'CSV':
-                    csv_data = df_tgt.to_csv(index=False).encode('utf-8')
-                    st.download_button("Unduh sebagai CSV", data=csv_data, file_name=f"{file_name}.csv", mime='text/csv')  
-                else: 
-                    output = BytesIO()
-                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        df_tgt.to_excel(writer, index=False, sheet_name='Prediksi Harga')
-                    st.download_button("Unduh sebagai Excel", data=output.getvalue(),
-                                       file_name=f"{file_name}.xlsx",
-                                       mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    fg_markers.add_to(m)
+
+                    folium.LayerControl().add_to(m)
+                    st_folium(m, width="100%", height=600)
+
+                    
+                    # --- DOWNLOAD ---
+                    st.subheader("⬇️ Download Hasil Prediksi")
+                    col_dl1, col_dl2 = st.columns(2)
+                    file_name = col_dl1.text_input("Nama File untuk Unduhan:", "prediksi_harga_tanah")
+                    file_type = col_dl2.radio("Format File:", ('CSV', 'Excel'), horizontal=True)
+                    
+                    if file_type == 'CSV':
+                        csv_data = df_tgt.to_csv(index=False).encode('utf-8')
+                        st.download_button("Unduh sebagai CSV", data=csv_data, file_name=f"{file_name}.csv", mime='text/csv')  
+                    else: 
+                        output = BytesIO()
+                        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                            df_tgt.to_excel(writer, index=False, sheet_name='Prediksi Harga')
+                        st.download_button("Unduh sebagai Excel", data=output.getvalue(),
+                                        file_name=f"{file_name}.xlsx",
+                                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             
         else:
             st.error("Kolom wajib tidak ditemukan. Pastikan CSV Sumber punya (Longitude, Latitude, Harga) dan Target punya (Longitude, Latitude).")
