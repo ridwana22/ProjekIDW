@@ -86,8 +86,7 @@ Jika tidak diunggah → aplikasi membuat grid otomatis.
 ### **1. Clone repository**
 
 ```bash
-git clone https://github.com/username/nama-repo.git
-cd nama-repo
+git clone https://github.com/ridwana22/Projek_EstimasiHargaTanah_IDW.git
 ```
 
 ### **2. Install library**
